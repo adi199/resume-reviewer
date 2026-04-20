@@ -1,7 +1,6 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import fs from 'fs';
 import * as dotenv from 'dotenv';
 import { createRequire } from 'module';
 import { ChatGroq } from "@langchain/groq";
@@ -132,7 +131,7 @@ ipcMain.on('analyze-resume-start', async (event, { resume, jd }) => {
             try {
               const a2uiMsg = JSON.parse(jsonPart);
               event.sender.send('analysis-chunk', a2uiMsg);
-            } catch (e) {
+            } catch (_e) {
               // ignore
             }
           }
@@ -162,7 +161,7 @@ ipcMain.on('analyze-resume-start', async (event, { resume, jd }) => {
           try {
             const a2uiMsg = JSON.parse(jsonPart);
             event.sender.send('analysis-chunk', a2uiMsg);
-          } catch (e) {
+          } catch (_e) {
             // ignore
           }
         }
