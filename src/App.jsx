@@ -37,6 +37,7 @@ function App() {
   const [error, setError] = useState(null);
   const reportRef = useRef(null);
   const [msgVisible, setMsgVisible] = useState(true);
+  const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [isSavingKey, setIsSavingKey] = useState(false);
