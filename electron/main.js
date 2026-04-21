@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 import * as dotenv from 'dotenv';
 import { createRequire } from 'module';
 import { ChatGroq } from "@langchain/groq";
@@ -14,6 +15,29 @@ const __dirname = path.dirname(__filename);
 
 // Load .env from the project root (up one level from main.js)
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
+
+const SETTINGS_PATH = path.join(app.getPath('userData'), 'settings.json');
+
+function getSettings() {
+  try {
+    if (fs.existsSync(SETTINGS_PATH)) {
+      return JSON.parse(fs.readFileSync(SETTINGS_PATH, 'utf8'));
+    }
+  } catch (err) {
+    console.error('Error reading settings:', err);
+  }
+  return {};
+}
+
+function saveSettings(settings) {
+  try {
+    const current = getSettings();
+    const updated = { ...current, ...settings };
+    fs.writeFileSync(SETTINGS_PATH, JSON.stringify(updated, null, 2));
+  } catch (err) {
+    console.error('Error saving settings:', err);
+  }
+}
 
 let mainWindow;
 
@@ -37,7 +61,7 @@ function createWindow() {
 
 // IPC Handlers
 
-// 1. PDF Text Extraction
+    // 1. PDF Text Extraction
 ipcMain.handle('extract-pdf-text', async (event, dataBuffer) => {
   try {
     const data = await pdf(Buffer.from(dataBuffer));
@@ -48,14 +72,26 @@ ipcMain.handle('extract-pdf-text', async (event, dataBuffer) => {
   }
 });
 
+// 2. Settings Management
+ipcMain.handle('save-api-key', async (event, key) => {
+  saveSettings({ groqApiKey: key });
+  return true;
+});
+
+ipcMain.handle('get-api-key', async () => {
+  const settings = getSettings();
+  return settings.groqApiKey || process.env.GROQ_API_KEY || '';
+});
+
 // 2. AI Resume Analysis (Streaming)
 ipcMain.on('analyze-resume-start', async (event, { resume, jd }) => {
   try {
-    const apiKey = process.env.GROQ_API_KEY;
+    const settings = getSettings();
+    const apiKey = settings.groqApiKey || process.env.GROQ_API_KEY;
     console.log('API Key Status:', apiKey ? 'Found' : 'MISSING');
     
     if (!apiKey) {
-      event.sender.send('analysis-error', 'GROQ_API_KEY not found in environment.');
+      event.sender.send('analysis-error', 'GROQ_API_KEY not found. Please set it in Settings.');
       return;
     }
 

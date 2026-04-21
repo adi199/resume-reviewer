@@ -10,7 +10,8 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { FileText, Plus, AlertCircle, Loader2 } from "lucide-react";
+import { FileText, Plus, AlertCircle, Loader2, Settings, Key, Check } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import brainIcon from './assets/brain-waves.png';
 
 const LOADING_MESSAGES = [
@@ -35,8 +36,11 @@ function App() {
   const [a2uiMessages, setA2uiMessages] = useState([]);
   const [error, setError] = useState(null);
   const reportRef = useRef(null);
-  const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
   const [msgVisible, setMsgVisible] = useState(true);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [apiKey, setApiKey] = useState('');
+  const [isSavingKey, setIsSavingKey] = useState(false);
+  const [keySaved, setKeySaved] = useState(false);
 
   // Setup Electron listeners once
   useEffect(() => {
@@ -60,6 +64,11 @@ function App() {
     const cleanupError = window.electronAPI.onAnalysisError((err) => {
       setError(err);
       setLoading(false);
+    });
+
+    // Load API Key
+    window.electronAPI.getApiKey().then(key => {
+      setApiKey(key);
     });
 
     return () => {
@@ -140,6 +149,16 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary/30">
+      {/* Settings Button */}
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        className="fixed top-8 right-8 z-50 rounded-full bg-secondary/50 backdrop-blur-md border border-border"
+        onClick={() => setIsSettingsOpen(true)}
+      >
+        <Settings className="w-5 h-5" />
+      </Button>
+
       {/* FAB */}
       {a2uiMessages.length > 0 && (
         <Button 
@@ -213,6 +232,59 @@ function App() {
               disabled={loading || !resume || !jd}
             >
               {loading ? 'Synthesizing...' : 'Generate Smart Analysis'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Settings Modal */}
+      <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+        <DialogContent className="sm:max-w-[425px] bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Key className="w-5 h-5 text-primary" />
+              API Settings
+            </DialogTitle>
+            <DialogDescription>
+              Enter your Groq API Key to enable resume analysis.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Groq API Key</label>
+              <div className="relative">
+                <Input 
+                  type="password" 
+                  placeholder="gsk_..." 
+                  value={apiKey}
+                  onChange={(e) => {
+                    setApiKey(e.target.value);
+                    setKeySaved(false);
+                  }}
+                  className="bg-secondary/20 h-11 pr-10"
+                />
+                {keySaved && (
+                  <Check className="absolute right-3 top-3 w-5 h-5 text-green-500" />
+                )}
+              </div>
+              <p className="text-[10px] text-muted-foreground pt-1">
+                Your key is stored locally on this machine and never shared.
+              </p>
+            </div>
+            <Button 
+              className="w-full h-11" 
+              onClick={async () => {
+                setIsSavingKey(true);
+                await window.electronAPI.saveApiKey(apiKey);
+                setKeySaved(true);
+                setTimeout(() => {
+                  setIsSavingKey(false);
+                  setIsSettingsOpen(false);
+                }, 800);
+              }}
+              disabled={isSavingKey}
+            >
+              {isSavingKey ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Save Key'}
             </Button>
           </div>
         </DialogContent>

@@ -23,6 +23,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // PDF Extraction
   extractPdfText: (pdfBuffer) => ipcRenderer.invoke('extract-pdf-text', pdfBuffer),
+
+  // Settings Management
+  saveApiKey: (key) => ipcRenderer.invoke('save-api-key', key),
+  getApiKey: () => ipcRenderer.invoke('get-api-key'),
   
   // Helper to handle file path for electron
   // In a real app, you'd use dialog.showOpenDialog but for this drop-zone style,
